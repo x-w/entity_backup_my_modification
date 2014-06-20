@@ -146,6 +146,8 @@ public:
   void destroy();
 
   std::bitset<entityx::MAX_COMPONENTS> component_mask() const;
+    
+  EntityManager* manager() const { return manager_; }
 
  private:
   EntityManager *manager_ = nullptr;
