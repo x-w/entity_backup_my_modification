@@ -177,6 +177,18 @@ public:
 
   C *get();
   const C *get() const;
+    
+  Entity entity();
+  const Entity entity() const;
+    
+  template <typename C1>
+  ComponentHandle<C1> component();
+
+  template <typename C1>
+  const ComponentHandle<const C1> component() const;
+
+  template <typename C1>
+  bool has_component() const;
 
   /**
    * Remove the component from its entity and destroy it.
@@ -246,9 +258,29 @@ template <typename Derived>
 struct Component : public BaseComponent {
  public:
   typedef ComponentHandle<Derived> Handle;
-
+    
+  Component() : handle_() {}
+    
+  Handle handle() { return handle_; }
+  const Handle handle() const { return handle_; }
+  
+  Entity entity() { return handle_.entity(); }
+  const Entity entity() const { return handle_.entity(); }
+    
+  template <typename C1>
+  ComponentHandle<C1> component() { return handle_.template component<C1>(); }
+  
+  template <typename C1>
+  const ComponentHandle<const C1> component() const { return handle_.template component<C1>(); }
+  
+  template <typename C1>
+  bool has_component() const { return handle_.template has_component<C1>(); }
+  
   /// Used internally for registration.
   static Family family();
+private:
+    friend class EntityManager;
+    Handle handle_;
 };
 
 
@@ -506,6 +538,7 @@ class EntityManager : entityx::help::NonCopyable {
     new(pool->get(id.index())) C(std::forward<Args>(args) ...);
     ComponentHandle<C> component(this, id);
     entity_component_mask_[id.index()] |= uint64_t(1) << family;
+    component.get()->handle_ = component;
     event_manager_.emit<ComponentAddedEvent<C>>(Entity(this, id), component);
     return component;
   }
@@ -521,6 +554,7 @@ class EntityManager : entityx::help::NonCopyable {
     const int family = C::family();
     const int index = id.index();
     ComponentHandle<C> component(this, id);
+    component.get()->handle_ = ComponentHandle<C>();
     BasePool *pool = component_pools_[family];
     event_manager_.emit<ComponentRemovedEvent<C>>(Entity(this, id), component);
     entity_component_mask_[id.index()] &= ~(uint64_t(1) << family);
@@ -857,10 +891,34 @@ inline const C *ComponentHandle<C>::get() const {
 }
 
 template <typename C>
+inline Entity ComponentHandle<C>::entity() { return manager_->get(id_); }
+
+template <typename C>
+inline const Entity ComponentHandle<C>::entity() const { return manager_->get(id_); }
+    
+template <typename C> template<typename C1>
+inline ComponentHandle<C1> ComponentHandle<C>::component()
+{
+  return entity().template component<C1>();
+}
+
+template <typename C> template <typename C1>
+inline const ComponentHandle<const C1> ComponentHandle<C>::component() const
+{
+  return entity().template component<C1>();
+}
+
+template <typename C> template <typename C1>
+inline bool ComponentHandle<C>::has_component() const
+{
+  return entity().template has_component<C1>();
+}
+    
+
+template <typename C>
 inline void ComponentHandle<C>::remove() {
   assert(valid());
   manager_->remove<C>(id_);
 }
-
 
 }  // namespace entityx

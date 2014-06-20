@@ -140,6 +140,9 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestComponentConstruction") {
   auto p = e.assign<Position>(1, 2);
   auto cp = e.component<Position>();
   REQUIRE(p ==  cp);
+  REQUIRE(p == p.get()->handle());
+  REQUIRE(p.entity() == e);
+  REQUIRE(p->entity() == e);
   REQUIRE(1.0 == Approx(cp->x));
   REQUIRE(2.0 == Approx(cp->y));
 }
@@ -176,7 +179,15 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponent") {
   f.assign<Position>();
   g.assign<Position>();
   REQUIRE(3 ==  size(em.entities_with_components<Position>()));
+  for (auto entity : em.entities_with_components<Position>())
+  {
+    REQUIRE(entity.component<Position>() == entity.component<Position>()->handle());
+  }
   REQUIRE(1 ==  size(em.entities_with_components<Direction>()));
+  for (auto entity : em.entities_with_components<Direction>())
+  {
+    REQUIRE(entity.component<Direction>() == entity.component<Direction>()->handle());
+  }
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithIntersectionOfComponents") {
@@ -190,6 +201,13 @@ TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithIntersectionOfCompone
   REQUIRE(50 ==  size(em.entities_with_components<Direction>()));
   REQUIRE(75 ==  size(em.entities_with_components<Position>()));
   REQUIRE(25 ==  size(em.entities_with_components<Direction, Position>()));
+  for (auto entity : em.entities_with_components<Direction, Position>())
+  {
+    REQUIRE(entity.component<Direction>() == entity.component<Position>().component<Direction>());
+    REQUIRE(entity.component<Direction>() == entity.component<Position>()->component<Direction>());
+    REQUIRE(entity.component<Position>() == entity.component<Direction>().component<Position>());
+    REQUIRE(entity.component<Position>() == entity.component<Direction>()->component<Position>());
+  }
 }
 
 TEST_CASE_METHOD(EntityManagerFixture, "TestGetEntitiesWithComponentAndUnpacking") {
