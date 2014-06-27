@@ -33,7 +33,7 @@ class BasePool {
 
   int size() const { return size_; }
   int capacity() const { return capacity_; }
-  int chunks() const { return blocks_.size(); }
+  int chunks() const { return (int)blocks_.size(); }
 
   /// Ensure at least n elements will fit in the pool.
   inline void expand(int n) {

@@ -408,9 +408,9 @@ class EntityManager : entityx::help::NonCopyable {
     }
 
     Iterator begin() { return Iterator(manager_, predicates_, unpackers_, 0); }
-    Iterator end() { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
+    Iterator end() { return Iterator(manager_, predicates_, unpackers_, (uint32_t)manager_->capacity()); }
     const Iterator begin() const { return Iterator(manager_, predicates_, unpackers_, 0); }
-    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, manager_->capacity()); }
+    const Iterator end() const { return Iterator(manager_, predicates_, unpackers_, (uint32_t)manager_->capacity()); }
 
     template <typename A>
     View &unpack_to(ComponentHandle<A> &a) {
@@ -532,7 +532,7 @@ class EntityManager : entityx::help::NonCopyable {
   template <typename C, typename ... Args>
   ComponentHandle<C> assign(Entity::Id id, Args && ... args) {
     assert_valid(id);
-    const int family = C::family();
+    const uint64_t family = C::family();
     // Placement new into the component pool.
     Pool<C> *pool = accomodate_component<C>();
     new(pool->get(id.index())) C(std::forward<Args>(args) ...);

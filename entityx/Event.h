@@ -82,7 +82,7 @@ class BaseReceiver {
         size++;
       }
     }
-    return size;
+    return (int)size;
   }
 
  private:
