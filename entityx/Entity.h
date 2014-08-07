@@ -223,7 +223,7 @@ private:
  */
 struct BaseComponent {
  public:
-  typedef uint64_t Family;
+  typedef /*uint64_t*/size_t Family;
 
   // NOTE: Component memory is *always* managed by the EntityManager.
   // Use Entity::destroy() instead.
