@@ -77,7 +77,7 @@ public:
    */
   static const Id INVALID;
 
-  Entity() {}
+  Entity() { invalidate(); }
   Entity(EntityManager *manager, Entity::Id id) : manager_(manager), id_(id) {}
   Entity(const Entity &other) : manager_(other.manager_), id_(other.id_) {}
 
