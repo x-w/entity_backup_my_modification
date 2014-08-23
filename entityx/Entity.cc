@@ -15,6 +15,8 @@ namespace entityx {
 
 const Entity::Id Entity::INVALID;
 BaseComponent::Family BaseComponent::family_counter_ = 0;
+    
+std::array<std::string, MAX_COMPONENTS> BaseComponent::family_class_names_;
 
 void Entity::invalidate() {
   id_ = INVALID;

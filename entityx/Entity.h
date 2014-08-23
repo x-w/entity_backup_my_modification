@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <array>
 
 #include "entityx/help/Pool.h"
 #include "entityx/config.h"
@@ -230,9 +231,11 @@ struct BaseComponent {
   void operator delete(void *p) { throw std::bad_alloc(); }
   void operator delete[](void *p) { throw std::bad_alloc(); }
 
+    static const std::string& className(Family family) { return family_class_names_[family]; }
 
  protected:
   static Family family_counter_;
+    static std::array<std::string, MAX_COMPONENTS> family_class_names_;
 };
 
 
@@ -278,11 +281,14 @@ struct Component : public BaseComponent {
   
   /// Used internally for registration.
   static Family family();
+    static const std::string& className() { return family_class_names_[family()]; }
+    static void setClassName(const std::string& name) { family_class_names_[family()] = name; }
 private:
     friend class EntityManager;
     Handle handle_;
 };
-
+    
+#define ENTITYX_REGISTER_COMPONENT(ComponentClass)      ComponentClass::setClassName(#ComponentClass)
 
 /**
  * Emitted when an entity is added to the system.
@@ -682,6 +688,34 @@ class EntityManager : entityx::help::NonCopyable {
     a = component<A>(id);
     unpack<Args ...>(id, args ...);
   }
+    
+    /**
+     * assign a name to component family
+     */
+//    template <typename C>
+//    void assignComponentFamilyClassName(const std::string& className)
+//    {
+//        size_t family = C::family;
+//        component_family_class_names_[family] = className;
+//    }
+    
+    /**
+     * Get all component family names of certain entity
+     */
+    std::vector<std::string> componentClassNames(Entity::Id id)
+    {
+        std::vector<std::string> result;
+        
+        ComponentMask families = entity_component_mask_[id.index()];
+        for (size_t f=0; f < families.size(); ++f)
+        {
+            if (families.test(f))
+            {
+                result.push_back(BaseComponent::className(f));
+            }
+        }
+        return result;
+    }
 
   /**
    * Destroy all entities and reset the EntityManager.
@@ -793,6 +827,10 @@ class EntityManager : entityx::help::NonCopyable {
   std::vector<uint32_t> entity_version_;
   // List of available entity slots.
   std::list<uint32_t> free_list_;
+  
+  // Class names for each component
+//  std::array<std::string, entityx::MAX_COMPONENTS> component_family_class_names_;
+
 };
 
 
