@@ -137,7 +137,15 @@ public:
     
   template <typename C>
   bool has_component() const;
-
+    
+    bool has_component(size_t family) const;
+    bool has_component(const std::string& className) const;
+    
+    void* raw_component_ptr(size_t family);
+    const void* raw_component_ptr(size_t family) const;
+    void* raw_component_ptr(const std::string& className);
+    const void* raw_component_ptr(const std::string& className) const;
+    
   template <typename A, typename ... Args>
   void unpack(ComponentHandle<A> &a, ComponentHandle<Args> & ... args);
 
@@ -234,6 +242,23 @@ struct BaseComponent {
   void operator delete[](void *p) { throw std::bad_alloc(); }
 
     static const std::string& className(Family family) { return family_class_names_[family]; }
+    
+    /*
+     * Get family id from component class name
+     */
+    static Family familyFromClassName(const std::string& className)
+    {
+        assert(className.length() > 0);
+        for (size_t f = 0; f < MAX_COMPONENTS; ++ f)
+        {
+            if (family_class_names_[f] == className)
+            {
+                return f;
+            }
+        }
+        assert(0);
+        return (Family)(-1);
+    }
 
  protected:
   static Family family_counter_;
@@ -574,16 +599,25 @@ class EntityManager : entityx::help::NonCopyable {
    */
   template <typename C>
   bool has_component(Entity::Id id) const {
-    assert_valid(id);
     size_t family = C::family();
-    // We don't bother checking the component mask, as we return a nullptr anyway.
-    if (family >= component_pools_.size())
-      return false;
-    BasePool *pool = component_pools_[family];
-    if (!pool || !entity_component_mask_[id.index()][family])
-      return false;
-    return true;
+      return has_component(id, family);
   }
+    
+    /**
+     * Check if an Entity has a component.
+     */
+    bool has_component(Entity::Id id, BaseComponent::Family family) const
+    {
+        assert_valid(id);
+        // We don't bother checking the component mask, as we return a nullptr anyway.
+        if (family >= component_pools_.size())
+            return false;
+        BasePool *pool = component_pools_[family];
+        if (!pool || !entity_component_mask_[id.index()][family])
+            return false;
+        return true;
+    }
+    
 
   /**
    * Retrieve a Component assigned to an Entity::Id.
@@ -718,7 +752,7 @@ class EntityManager : entityx::help::NonCopyable {
         }
         return result;
     }
-
+    
   /**
    * Destroy all entities and reset the EntityManager.
    */
@@ -749,7 +783,23 @@ class EntityManager : entityx::help::NonCopyable {
     assert(id.index() < entity_component_mask_.size() && "Entity::Id ID outside entity vector range");
     assert(entity_version_[id.index()] == id.version() && "Attempt to access Entity via a stale Entity::Id");
   }
+    
+    void* get_raw_component_ptr(Entity::Id id, BaseComponent::Family family)
+    {
+        assert(valid(id));
+        BasePool *pool = component_pools_[family];
+        assert(pool);
+        return pool->get(id.index());
+    }
 
+    const void* get_raw_component_ptr(Entity::Id id, BaseComponent::Family family) const
+    {
+        assert_valid(id);
+        BasePool *pool = component_pools_[family];
+        assert(pool);
+        return pool->get(id.index());
+    }
+    
   template <typename C>
   C *get_component_ptr(Entity::Id id) {
     assert(valid(id));
@@ -873,6 +923,41 @@ bool Entity::has_component() const {
   assert(valid());
   return manager_->has_component<C>(id_);
 }
+    
+    inline bool Entity::has_component(size_t family) const
+    {
+        assert(valid());
+        return manager_->has_component(id_, family);
+    }
+    
+    inline bool Entity::has_component(const std::string& className) const
+    {
+        size_t family = BaseComponent::familyFromClassName(className);
+        return has_component(family);
+    }
+    
+    inline void* Entity::raw_component_ptr(size_t family)
+    {
+        return manager_->get_raw_component_ptr(id_, family);
+    }
+    
+    inline const void* Entity::raw_component_ptr(size_t family) const
+    {
+        return manager_->get_raw_component_ptr(id_, family);
+    }
+    
+    inline void* Entity::raw_component_ptr(const std::string& className)
+    {
+        size_t family = BaseComponent::familyFromClassName(className);
+        return raw_component_ptr(family);
+    }
+    
+    inline const void* Entity::raw_component_ptr(const std::string& className) const
+    {
+        size_t family = BaseComponent::familyFromClassName(className);
+        return raw_component_ptr(family);
+    }
+    
 
 template <typename A, typename ... Args>
 void Entity::unpack(ComponentHandle<A> &a, ComponentHandle<Args> & ... args) {
