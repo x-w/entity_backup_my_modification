@@ -148,6 +148,8 @@ public:
 
   std::bitset<entityx::MAX_COMPONENTS> component_mask() const;
     
+    std::vector<std::string> componentFamilyClassNames() const;
+    
   EntityManager* manager() const { return manager_; }
 
  private:
@@ -702,7 +704,7 @@ class EntityManager : entityx::help::NonCopyable {
     /**
      * Get all component family names of certain entity
      */
-    std::vector<std::string> componentClassNames(Entity::Id id)
+    std::vector<std::string> componentFamilyClassNames(Entity::Id id) const
     {
         std::vector<std::string> result;
         
@@ -881,6 +883,12 @@ void Entity::unpack(ComponentHandle<A> &a, ComponentHandle<Args> & ... args) {
 inline bool Entity::valid() const {
   return manager_ && manager_->valid(id_);
 }
+    
+inline std::vector<std::string> Entity::componentFamilyClassNames() const
+{
+    return manager()->componentFamilyClassNames(id());
+}
+    
 
 inline std::ostream &operator << (std::ostream &out, const Entity::Id &id) {
   out << "Entity::Id(" << id.index() << "." << id.version() << ")";
